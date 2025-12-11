@@ -14,6 +14,7 @@ import Animated, {
   FadeIn,
 } from "react-native-reanimated";
 import * as FileSystem from "expo-file-system";
+import * as ImageManipulator from "expo-image-manipulator";
 import { RootStackParamList } from "../navigation/RootNavigator";
 import { useElfStore } from "../state/elfStore";
 import { generateElfCompositePrompt, generateElfVideoPrompt } from "../utils/elfPrompts";
@@ -231,10 +232,12 @@ export default function GeneratingScreen() {
         message: "Preparing your scene for video...",
       });
 
-      // Read the scene image as base64
-      const imageBase64 = await FileSystem.readAsStringAsync(sceneUri, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
+      // Resize the image to match Sora's required dimensions (1280x720)
+      const manipResult = await ImageManipulator.manipulateAsync(
+        sceneUri,
+        [{ resize: { width: 1280, height: 720 } }],
+        { compress: 0.9, format: ImageManipulator.SaveFormat.JPEG }
+      );
 
       setGenerationState({
         stage: "rendering",
@@ -253,9 +256,9 @@ export default function GeneratingScreen() {
       form.append("size", "1280x720");
       form.append("seconds", "8");
 
-      // Include the reference image
+      // Include the resized reference image
       form.append("input_reference", {
-        uri: sceneUri,
+        uri: manipResult.uri,
         type: "image/jpeg",
         name: "scene.jpg",
       } as unknown as Blob);
