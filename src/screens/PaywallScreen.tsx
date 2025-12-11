@@ -5,6 +5,7 @@ import {
   Pressable,
   ScrollView,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
@@ -143,8 +144,12 @@ export default function PaywallScreen() {
         >
           {/* Hero Section */}
           <View className="items-center mt-8 mb-10">
-            <View className="w-24 h-24 bg-green-500/20 rounded-3xl items-center justify-center mb-6">
-              <Text className="text-5xl">🎄</Text>
+            <View className="w-24 h-24 bg-green-500/20 rounded-3xl items-center justify-center mb-6 overflow-hidden">
+              <Image
+                source={require("../../assets/image-1765481776.png")}
+                className="w-20 h-20"
+                resizeMode="contain"
+              />
             </View>
             <Text className="text-white text-3xl font-bold text-center mb-3">
               Unlock Unlimited Magic
