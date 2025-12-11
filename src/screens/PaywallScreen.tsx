@@ -14,7 +14,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { PurchasesPackage } from "react-native-purchases";
 import { RootStackParamList } from "../navigation/RootNavigator";
-import { useElfStore } from "../state/elfStore";
+import { useElfStore, USAGE_LIMITS } from "../state/elfStore";
 import {
   getOfferings,
   purchasePackage,
@@ -25,19 +25,24 @@ import {
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-const FREE_PHOTO_LIMIT = 2;
-const FREE_VIDEO_LIMIT = 1;
-
 export default function PaywallScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
   const setPremium = useElfStore((s) => s.setPremium);
+  const isPremium = useElfStore((s) => s.isPremium);
+  const photoGenerations = useElfStore((s) => s.photoGenerations);
+  const videoGenerations = useElfStore((s) => s.videoGenerations);
 
   const [isLoading, setIsLoading] = useState(true);
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [lifetimePackage, setLifetimePackage] = useState<PurchasesPackage | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Check if premium user has hit their limits
+  const premiumPhotosRemaining = USAGE_LIMITS.premium.photos - photoGenerations;
+  const premiumVideosRemaining = USAGE_LIMITS.premium.videos - videoGenerations;
+  const isPremiumAtLimit = isPremium && (premiumPhotosRemaining <= 0 || premiumVideosRemaining <= 0);
 
   useEffect(() => {
     loadOfferings();
@@ -151,58 +156,103 @@ export default function PaywallScreen() {
                 resizeMode="contain"
               />
             </View>
-            <Text className="text-white text-3xl font-bold text-center mb-3">
-              Unlock Unlimited Magic
-            </Text>
-            <Text className="text-gray-400 text-base text-center leading-6">
-              Create unlimited elf sightings and make this Christmas truly magical
-            </Text>
-          </View>
-
-          {/* Features List */}
-          <View className="bg-white/5 rounded-2xl p-6 mb-8">
-            <FeatureItem
-              icon="infinite"
-              title="Unlimited Photo Sightings"
-              description={`Free users get ${FREE_PHOTO_LIMIT} photos`}
-            />
-            <FeatureItem
-              icon="videocam"
-              title="Unlimited Video Sightings"
-              description={`Free users get ${FREE_VIDEO_LIMIT} video`}
-            />
-            <FeatureItem
-              icon="sparkles"
-              title="Priority Generation"
-              description="Faster processing for your creations"
-            />
-            <FeatureItem
-              icon="star"
-              title="Premium Support"
-              description="Get help when you need it"
-              isLast
-            />
-          </View>
-
-          {/* Pricing */}
-          <View className="items-center mb-8">
-            <Text className="text-gray-500 text-sm mb-2">
-              Limited Time Holiday Offer
-            </Text>
-            {isLoading ? (
-              <ActivityIndicator color="#22c55e" size="small" />
+            {isPremiumAtLimit ? (
+              <>
+                <Text className="text-white text-3xl font-bold text-center mb-3">
+                  Usage Limit Reached
+                </Text>
+                <Text className="text-gray-400 text-base text-center leading-6">
+                  {"You've used all your premium generations this season. Thank you for being a premium member!"}
+                </Text>
+              </>
             ) : (
               <>
-                <View className="flex-row items-baseline">
-                  <Text className="text-white text-4xl font-bold">{price}</Text>
-                  <Text className="text-gray-400 text-base ml-2">/ lifetime</Text>
-                </View>
-                <Text className="text-green-500 text-sm mt-2">
-                  One-time purchase, no subscription
+                <Text className="text-white text-3xl font-bold text-center mb-3">
+                  Unlock More Magic
+                </Text>
+                <Text className="text-gray-400 text-base text-center leading-6">
+                  Create more elf sightings and make this Christmas truly magical
                 </Text>
               </>
             )}
           </View>
+
+          {/* Premium user usage stats */}
+          {isPremium && (
+            <View className="bg-green-500/10 rounded-2xl p-5 mb-6 border border-green-500/20">
+              <View className="flex-row items-center mb-4">
+                <Ionicons name="checkmark-circle" size={20} color="#22c55e" />
+                <Text className="text-green-500 font-semibold text-base ml-2">
+                  Premium Member
+                </Text>
+              </View>
+              <View className="flex-row justify-between">
+                <View className="flex-1">
+                  <Text className="text-gray-400 text-sm">Photos Remaining</Text>
+                  <Text className="text-white text-2xl font-bold">
+                    {Math.max(0, premiumPhotosRemaining)}
+                  </Text>
+                  <Text className="text-gray-500 text-xs">of {USAGE_LIMITS.premium.photos}</Text>
+                </View>
+                <View className="flex-1">
+                  <Text className="text-gray-400 text-sm">Videos Remaining</Text>
+                  <Text className="text-white text-2xl font-bold">
+                    {Math.max(0, premiumVideosRemaining)}
+                  </Text>
+                  <Text className="text-gray-500 text-xs">of {USAGE_LIMITS.premium.videos}</Text>
+                </View>
+              </View>
+            </View>
+          )}
+
+          {/* Features List - only show for non-premium users */}
+          {!isPremium && (
+            <View className="bg-white/5 rounded-2xl p-6 mb-8">
+              <FeatureItem
+                icon="images"
+                title={`${USAGE_LIMITS.premium.photos} Photo Sightings`}
+                description={`Free users get ${USAGE_LIMITS.free.photos} photos`}
+              />
+              <FeatureItem
+                icon="videocam"
+                title={`${USAGE_LIMITS.premium.videos} Video Sightings`}
+                description={`Free users get ${USAGE_LIMITS.free.videos} video`}
+              />
+              <FeatureItem
+                icon="sparkles"
+                title="Priority Generation"
+                description="Faster processing for your creations"
+              />
+              <FeatureItem
+                icon="star"
+                title="Premium Support"
+                description="Get help when you need it"
+                isLast
+              />
+            </View>
+          )}
+
+          {/* Pricing - only show for non-premium users */}
+          {!isPremium && (
+            <View className="items-center mb-8">
+              <Text className="text-gray-500 text-sm mb-2">
+                Limited Time Holiday Offer
+              </Text>
+              {isLoading ? (
+                <ActivityIndicator color="#22c55e" size="small" />
+              ) : (
+                <>
+                  <View className="flex-row items-baseline">
+                    <Text className="text-white text-4xl font-bold">{price}</Text>
+                    <Text className="text-gray-400 text-base ml-2">/ lifetime</Text>
+                  </View>
+                  <Text className="text-green-500 text-sm mt-2">
+                    One-time purchase, no subscription
+                  </Text>
+                </>
+              )}
+            </View>
+          )}
 
           {/* Error Message */}
           {error && (
@@ -211,39 +261,55 @@ export default function PaywallScreen() {
             </View>
           )}
 
-          {/* Subscribe Button */}
-          <Pressable
-            onPress={handleSubscribe}
-            disabled={isPurchasing || isLoading || !lifetimePackage}
-            className={`rounded-2xl py-4 mb-4 ${
-              isPurchasing || isLoading || !lifetimePackage
-                ? "bg-green-600/50"
-                : "bg-green-600 active:opacity-80"
-            }`}
-          >
-            {isPurchasing ? (
-              <ActivityIndicator color="white" />
-            ) : (
-              <Text className="text-white text-lg font-bold text-center">
-                Unlock Premium
-              </Text>
-            )}
-          </Pressable>
+          {/* Subscribe Button - only for non-premium users */}
+          {!isPremium && (
+            <Pressable
+              onPress={handleSubscribe}
+              disabled={isPurchasing || isLoading || !lifetimePackage}
+              className={`rounded-2xl py-4 mb-4 ${
+                isPurchasing || isLoading || !lifetimePackage
+                  ? "bg-green-600/50"
+                  : "bg-green-600 active:opacity-80"
+              }`}
+            >
+              {isPurchasing ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <Text className="text-white text-lg font-bold text-center">
+                  Unlock Premium
+                </Text>
+              )}
+            </Pressable>
+          )}
 
-          {/* Restore Button */}
-          <Pressable
-            onPress={handleRestore}
-            disabled={isRestoring || !isConfigured}
-            className="py-3 mb-6"
-          >
-            {isRestoring ? (
-              <ActivityIndicator color="#9ca3af" size="small" />
-            ) : (
-              <Text className="text-gray-400 text-base text-center">
-                Restore Purchase
+          {/* Go Back Button - for premium users */}
+          {isPremium && (
+            <Pressable
+              onPress={() => navigation.goBack()}
+              className="rounded-2xl py-4 mb-4 bg-gray-700 active:opacity-80"
+            >
+              <Text className="text-white text-lg font-bold text-center">
+                Go Back
               </Text>
-            )}
-          </Pressable>
+            </Pressable>
+          )}
+
+          {/* Restore Button - only for non-premium users */}
+          {!isPremium && (
+            <Pressable
+              onPress={handleRestore}
+              disabled={isRestoring || !isConfigured}
+              className="py-3 mb-6"
+            >
+              {isRestoring ? (
+                <ActivityIndicator color="#9ca3af" size="small" />
+              ) : (
+                <Text className="text-gray-400 text-base text-center">
+                  Restore Purchase
+                </Text>
+              )}
+            </Pressable>
+          )}
 
           {/* Terms */}
           <Text className="text-gray-600 text-xs text-center leading-5">

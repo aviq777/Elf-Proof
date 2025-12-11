@@ -20,15 +20,13 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import { Video, ResizeMode, AVPlaybackStatus } from "expo-av";
 import ViewShot from "react-native-view-shot";
 import { RootStackParamList } from "../navigation/RootNavigator";
-import { useElfStore } from "../state/elfStore";
+import { useElfStore, USAGE_LIMITS } from "../state/elfStore";
 import Slider from "@react-native-community/slider";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProps = RouteProp<RootStackParamList, "CreateSighting">;
 
 const MAX_VIDEO_DURATION = 8; // seconds
-const FREE_PHOTO_LIMIT = 2;
-const FREE_VIDEO_LIMIT = 1;
 
 export default function CreateSightingScreen() {
   const insets = useSafeAreaInsets();
@@ -121,14 +119,21 @@ export default function CreateSightingScreen() {
 
     if (!sceneUri) return;
 
-    // Check paywall limits
+    // Check usage limits (both free and premium users have limits)
     const isVideoMode = mode === "video";
-    const atLimit = isVideoMode
-      ? videoGenerations >= FREE_VIDEO_LIMIT
-      : photoGenerations >= FREE_PHOTO_LIMIT;
+    const limits = isPremium ? USAGE_LIMITS.premium : USAGE_LIMITS.free;
+    const currentUsage = isVideoMode ? videoGenerations : photoGenerations;
+    const maxUsage = isVideoMode ? limits.videos : limits.photos;
+    const atLimit = currentUsage >= maxUsage;
 
-    if (!isPremium && atLimit) {
-      navigation.navigate("Paywall");
+    if (atLimit) {
+      // Show paywall for free users, or show limit reached for premium
+      if (!isPremium) {
+        navigation.navigate("Paywall");
+      } else {
+        // Premium user hit their limit - they still see the paywall with a "limit reached" message
+        navigation.navigate("Paywall");
+      }
       return;
     }
 

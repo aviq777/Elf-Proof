@@ -8,6 +8,18 @@ interface ElfSettings {
   photoUri: string | null;
 }
 
+// Usage limits - keeps your business profitable
+export const USAGE_LIMITS = {
+  free: {
+    photos: 2,
+    videos: 1,
+  },
+  premium: {
+    photos: 50, // Generous but capped - prevents abuse
+    videos: 10, // Videos are expensive to generate
+  },
+} as const;
+
 interface ElfStore {
   sightings: ElfSighting[];
   currentSceneUri: string | null;
