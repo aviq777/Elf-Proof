@@ -24,6 +24,9 @@ import {
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
+// Default elf image
+const DEFAULT_ELF_IMAGE = require("../../assets/image-1765482401.jpeg");
+
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
@@ -135,9 +138,12 @@ export default function SettingsScreen() {
                   </Pressable>
                 </View>
               ) : (
-                <View className="w-32 h-32 bg-[#1f2937] rounded-2xl items-center justify-center border-2 border-dashed border-gray-600">
-                  <Text className="text-4xl mb-2">🧝</Text>
-                  <Text className="text-gray-500 text-xs">No photo</Text>
+                <View className="w-32 h-32 rounded-2xl overflow-hidden border-2 border-dashed border-gray-600">
+                  <Image
+                    source={DEFAULT_ELF_IMAGE}
+                    className="w-full h-full"
+                    resizeMode="cover"
+                  />
                 </View>
               )}
             </View>
@@ -267,7 +273,7 @@ export default function SettingsScreen() {
               </Text>
             </View>
             <Text className="text-gray-500 text-sm">
-              Elf Proof v1.0.0
+              Elf Watcher v1.0.0
             </Text>
             <Text className="text-gray-600 text-xs mt-1">
               Catch your elf in action with AI-powered magic

@@ -1,4 +1,4 @@
-# Elf Sightings App
+# Elf Watcher
 
 A magical Christmas app that creates convincing "security camera footage" of your Elf on the Shelf coming to life and moving around your home. Perfect for proving to kids that their elf is real!
 
@@ -20,6 +20,17 @@ A magical Christmas app that creates convincing "security camera footage" of you
 - Share sightings with family
 - Save to your device photo gallery
 
+### Settings
+- Customize your elf with a name and photo
+- Upload a picture of your specific elf for AI reference
+- View premium status and usage limits
+- Restore purchases
+
+### Premium (via RevenueCat)
+- Free users get 2 photos and 1 video
+- Premium unlocks unlimited sightings
+- $4.99 lifetime purchase
+
 ## How It Works
 
 1. **Home Screen**: Choose between creating a photo or video sighting
@@ -39,6 +50,7 @@ A magical Christmas app that creates convincing "security camera footage" of you
 - **React Navigation** for navigation
 - **Zustand** for state management with AsyncStorage persistence
 - **NativeWind** for styling
+- **RevenueCat** for in-app purchases
 
 ## File Structure
 
@@ -50,6 +62,8 @@ src/
     GeneratingScreen.tsx  - AI generation progress
     GalleryScreen.tsx     - View all sightings
     ViewSightingScreen.tsx - View single sighting
+    SettingsScreen.tsx    - Elf customization and premium
+    PaywallScreen.tsx     - Premium upgrade paywall
   state/
     elfStore.ts           - Zustand store for sightings
   types/
@@ -58,11 +72,13 @@ src/
     elfPrompts.ts        - AI prompt templates
   navigation/
     RootNavigator.tsx    - Navigation setup
+  lib/
+    revenuecatClient.ts  - RevenueCat SDK wrapper
 ```
 
 ## Notes
 
 - Photo generation takes ~30 seconds
 - Video generation takes 2-5 minutes
-- The elf character is a generic Christmas scout elf doll (10-12 inches tall)
+- Users can upload their own elf photo for AI reference
 - Best results with well-lit scenes that have clear reference objects for scale

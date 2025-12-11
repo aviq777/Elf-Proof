@@ -20,7 +20,7 @@ export default function HomeScreen() {
       <View style={{ paddingTop: insets.top }} className="flex-1">
         {/* Header */}
         <View className="px-6 pt-4 pb-6">
-          <Text className="text-white text-3xl font-bold">Elf Sightings</Text>
+          <Text className="text-white text-3xl font-bold">Elf Watcher</Text>
           <Text className="text-gray-400 text-base mt-1">
             Catch your elf in action
           </Text>
