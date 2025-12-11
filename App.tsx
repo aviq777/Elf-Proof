@@ -1,8 +1,11 @@
+import { useEffect } from "react";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { NavigationContainer } from "@react-navigation/native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import RootNavigator from "./src/navigation/RootNavigator";
+import { useElfStore } from "./src/state/elfStore";
+import { hasEntitlement } from "./src/lib/revenuecatClient";
 
 /*
 IMPORTANT NOTICE: DO NOT REMOVE
@@ -26,6 +29,19 @@ const openai_api_key = Constants.expoConfig.extra.apikey;
 */
 
 export default function App() {
+  const setPremium = useElfStore((s) => s.setPremium);
+
+  // Sync premium status with RevenueCat on app launch
+  useEffect(() => {
+    const syncPremiumStatus = async () => {
+      const result = await hasEntitlement("premium");
+      if (result.ok) {
+        setPremium(result.data);
+      }
+    };
+    syncPremiumStatus();
+  }, [setPremium]);
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
