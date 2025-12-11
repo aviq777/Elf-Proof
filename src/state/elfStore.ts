@@ -8,6 +8,11 @@ interface ElfStore {
   currentSceneUri: string | null;
   generationState: GenerationState;
 
+  // Usage tracking for paywall
+  photoGenerations: number;
+  videoGenerations: number;
+  isPremium: boolean;
+
   // Actions
   addSighting: (sighting: ElfSighting) => void;
   removeSighting: (id: string) => void;
@@ -16,6 +21,9 @@ interface ElfStore {
   setGenerationState: (state: Partial<GenerationState>) => void;
   resetGenerationState: () => void;
   clearAllSightings: () => void;
+  incrementPhotoGenerations: () => void;
+  incrementVideoGenerations: () => void;
+  setPremium: (isPremium: boolean) => void;
 }
 
 const initialGenerationState: GenerationState = {
@@ -31,6 +39,9 @@ export const useElfStore = create<ElfStore>()(
       sightings: [],
       currentSceneUri: null,
       generationState: initialGenerationState,
+      photoGenerations: 0,
+      videoGenerations: 0,
+      isPremium: false,
 
       addSighting: (sighting) =>
         set((state) => ({
@@ -60,12 +71,23 @@ export const useElfStore = create<ElfStore>()(
         set({ generationState: initialGenerationState }),
 
       clearAllSightings: () => set({ sightings: [] }),
+
+      incrementPhotoGenerations: () =>
+        set((state) => ({ photoGenerations: state.photoGenerations + 1 })),
+
+      incrementVideoGenerations: () =>
+        set((state) => ({ videoGenerations: state.videoGenerations + 1 })),
+
+      setPremium: (isPremium) => set({ isPremium }),
     }),
     {
       name: "elf-sightings-storage",
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
         sightings: state.sightings,
+        photoGenerations: state.photoGenerations,
+        videoGenerations: state.videoGenerations,
+        isPremium: state.isPremium,
       }),
     }
   )

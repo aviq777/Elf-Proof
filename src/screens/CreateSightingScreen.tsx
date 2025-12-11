@@ -27,6 +27,8 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProps = RouteProp<RootStackParamList, "CreateSighting">;
 
 const MAX_VIDEO_DURATION = 8; // seconds
+const FREE_PHOTO_LIMIT = 2;
+const FREE_VIDEO_LIMIT = 1;
 
 export default function CreateSightingScreen() {
   const insets = useSafeAreaInsets();
@@ -48,6 +50,11 @@ export default function CreateSightingScreen() {
   const viewShotRef = useRef<ViewShot>(null);
 
   const setCurrentSceneUri = useElfStore((s) => s.setCurrentSceneUri);
+  const photoGenerations = useElfStore((s) => s.photoGenerations);
+  const videoGenerations = useElfStore((s) => s.videoGenerations);
+  const isPremium = useElfStore((s) => s.isPremium);
+  const incrementPhotoGenerations = useElfStore((s) => s.incrementPhotoGenerations);
+  const incrementVideoGenerations = useElfStore((s) => s.incrementVideoGenerations);
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -112,14 +119,32 @@ export default function CreateSightingScreen() {
     // For video mode, we use the selected image OR video thumbnail as the scene
     const sceneUri = selectedImage || videoThumbnail;
 
-    if (sceneUri) {
-      setCurrentSceneUri(sceneUri);
-      navigation.navigate("Generating", {
-        sceneUri: sceneUri,
-        mode: mode === "video" ? "video" : "image",
-        sceneDescription: sceneDescription || undefined,
-      });
+    if (!sceneUri) return;
+
+    // Check paywall limits
+    const isVideoMode = mode === "video";
+    const atLimit = isVideoMode
+      ? videoGenerations >= FREE_VIDEO_LIMIT
+      : photoGenerations >= FREE_PHOTO_LIMIT;
+
+    if (!isPremium && atLimit) {
+      navigation.navigate("Paywall");
+      return;
     }
+
+    // Increment usage counter
+    if (isVideoMode) {
+      incrementVideoGenerations();
+    } else {
+      incrementPhotoGenerations();
+    }
+
+    setCurrentSceneUri(sceneUri);
+    navigation.navigate("Generating", {
+      sceneUri: sceneUri,
+      mode: isVideoMode ? "video" : "image",
+      sceneDescription: sceneDescription || undefined,
+    });
   };
 
   const clearSelection = () => {

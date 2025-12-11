@@ -9,12 +9,14 @@ import CreateSightingScreen from "../screens/CreateSightingScreen";
 import GalleryScreen from "../screens/GalleryScreen";
 import ViewSightingScreen from "../screens/ViewSightingScreen";
 import GeneratingScreen from "../screens/GeneratingScreen";
+import PaywallScreen from "../screens/PaywallScreen";
 
 export type RootStackParamList = {
   MainTabs: undefined;
   CreateSighting: { mode: "photo" | "video" };
   ViewSighting: { sightingId: string };
   Generating: { sceneUri: string; mode: "image" | "video"; sceneDescription?: string };
+  Paywall: undefined;
 };
 
 export type TabParamList = {
@@ -101,6 +103,15 @@ export default function RootNavigator() {
           presentation: "fullScreenModal",
           animation: "fade",
           gestureEnabled: false,
+        }}
+      />
+      <Stack.Screen
+        name="Paywall"
+        component={PaywallScreen}
+        options={{
+          presentation: "formSheet",
+          sheetAllowedDetents: [0.85],
+          animation: "slide_from_bottom",
         }}
       />
     </Stack.Navigator>

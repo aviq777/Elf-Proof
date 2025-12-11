@@ -100,7 +100,7 @@ export default function HomeScreen() {
                 <Text className="text-lg">🎅</Text>
               </View>
               <Text className="text-white text-2xl font-bold">
-                {Math.floor((new Date("2024-12-25").getTime() - Date.now()) / (1000 * 60 * 60 * 24))}
+                {Math.max(0, Math.floor((new Date("2025-12-25").getTime() - Date.now()) / (1000 * 60 * 60 * 24)))}
               </Text>
               <Text className="text-gray-400 text-sm">Days to Christmas</Text>
             </View>
