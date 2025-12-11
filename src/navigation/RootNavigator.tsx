@@ -121,8 +121,7 @@ export default function RootNavigator() {
         name="Paywall"
         component={PaywallScreen}
         options={{
-          presentation: "formSheet",
-          sheetAllowedDetents: [0.85],
+          presentation: "fullScreenModal",
           animation: "slide_from_bottom",
         }}
       />

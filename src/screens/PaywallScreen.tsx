@@ -138,7 +138,7 @@ export default function PaywallScreen() {
 
         <ScrollView
           className="flex-1"
-          contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 40 }}
+          contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: insets.bottom + 40 }}
           showsVerticalScrollIndicator={false}
         >
           {/* Hero Section */}
