@@ -10,6 +10,7 @@ import GalleryScreen from "../screens/GalleryScreen";
 import ViewSightingScreen from "../screens/ViewSightingScreen";
 import GeneratingScreen from "../screens/GeneratingScreen";
 import PaywallScreen from "../screens/PaywallScreen";
+import SettingsScreen from "../screens/SettingsScreen";
 
 export type RootStackParamList = {
   MainTabs: undefined;
@@ -22,6 +23,7 @@ export type RootStackParamList = {
 export type TabParamList = {
   Home: undefined;
   Gallery: undefined;
+  Settings: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -65,6 +67,16 @@ function TabNavigator() {
             <Ionicons name="images" size={size} color={color} />
           ),
           tabBarLabel: "Sightings",
+        }}
+      />
+      <Tab.Screen
+        name="Settings"
+        component={SettingsScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="settings" size={size} color={color} />
+          ),
+          tabBarLabel: "Settings",
         }}
       />
     </Tab.Navigator>

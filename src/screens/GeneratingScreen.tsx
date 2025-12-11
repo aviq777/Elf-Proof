@@ -33,6 +33,7 @@ export default function GeneratingScreen() {
   const generationState = useElfStore((s) => s.generationState);
   const setGenerationState = useElfStore((s) => s.setGenerationState);
   const resetGenerationState = useElfStore((s) => s.resetGenerationState);
+  const elfSettings = useElfStore((s) => s.elfSettings);
 
   const [error, setError] = useState<string | null>(null);
   const hasStartedRef = useRef(false);
@@ -116,8 +117,40 @@ export default function GeneratingScreen() {
 
       // Use Gemini to analyze and composite the elf
       const prompt = generateElfCompositePrompt(
-        sceneDescription || "a room in a house"
+        sceneDescription || "a room in a house",
+        elfSettings.name
       );
+
+      // Build the content parts - scene image and optionally elf reference
+      const contentParts: Array<{ text?: string; inlineData?: { mimeType: string; data: string } }> = [
+        { text: prompt },
+        {
+          inlineData: {
+            mimeType: "image/jpeg",
+            data: imageBase64,
+          },
+        },
+      ];
+
+      // If user uploaded an elf photo, include it as reference
+      if (elfSettings.photoUri) {
+        try {
+          const elfImageBase64 = await FileSystem.readAsStringAsync(elfSettings.photoUri, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+          contentParts.push({
+            text: `Use this image of the elf named "${elfSettings.name}" as a reference for what the elf looks like:`,
+          });
+          contentParts.push({
+            inlineData: {
+              mimeType: "image/jpeg",
+              data: elfImageBase64,
+            },
+          });
+        } catch (e) {
+          console.log("Could not load elf reference image:", e);
+        }
+      }
 
       const response = await fetch(
         "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent",
@@ -130,15 +163,7 @@ export default function GeneratingScreen() {
           body: JSON.stringify({
             contents: [
               {
-                parts: [
-                  { text: prompt },
-                  {
-                    inlineData: {
-                      mimeType: "image/jpeg",
-                      data: imageBase64,
-                    },
-                  },
-                ],
+                parts: contentParts,
               },
             ],
             generationConfig: {
@@ -247,7 +272,8 @@ export default function GeneratingScreen() {
 
       // Create video generation request with Sora
       const videoPrompt = generateElfVideoPrompt(
-        sceneDescription || "a cozy room at night"
+        sceneDescription || "a cozy room at night",
+        elfSettings.name
       );
 
       const form = new FormData();

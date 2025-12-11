@@ -1,7 +1,7 @@
 // Elf character description for AI image generation
 // Based on the classic Elf on the Shelf scout elf appearance
 
-export const ELF_CHARACTER_PROMPT = `A small Christmas scout elf doll, exactly 10-12 inches tall. The elf has:
+export const getElfCharacterPrompt = (elfName?: string) => `A small Christmas scout elf doll named ${elfName || "the elf"}, exactly 10-12 inches tall. The elf has:
 - A soft beige/tan felt face with simple embroidered features: small black dot eyes, a tiny smile, and rosy cheeks
 - A red pointed felt hat with white fuzzy trim at the base
 - A red felt one-piece suit/jumpsuit covering the entire body
@@ -10,6 +10,9 @@ export const ELF_CHARACTER_PROMPT = `A small Christmas scout elf doll, exactly 1
 - Small felt hands (no fingers detailed)
 - The elf has a soft, plush toy appearance but with a mischievous, playful pose
 - The elf is NOT a real person - it is clearly a soft fabric/felt doll`;
+
+// Legacy constant for backwards compatibility
+export const ELF_CHARACTER_PROMPT = getElfCharacterPrompt();
 
 export const ELF_SCENE_PROMPT_SUFFIX = `The elf should:
 - Be positioned naturally in the scene as if it climbed or moved there on its own
@@ -24,8 +27,8 @@ export const SECURITY_CAMERA_STYLE = `Style the image like security camera or ho
 - REC indicator in corner
 - Motion detection box highlighting the elf`;
 
-export const generateElfCompositePrompt = (sceneDescription: string): string => {
-  return `${ELF_CHARACTER_PROMPT}
+export const generateElfCompositePrompt = (sceneDescription: string, elfName?: string): string => {
+  return `${getElfCharacterPrompt(elfName)}
 
 Scene: ${sceneDescription}
 
@@ -33,11 +36,11 @@ ${ELF_SCENE_PROMPT_SUFFIX}
 
 ${SECURITY_CAMERA_STYLE}
 
-Make this look like authentic security camera footage that caught the elf moving at night. The elf should appear real but small, clearly the 10-12 inch plush doll size relative to household objects.`;
+Make this look like authentic security camera footage that caught ${elfName || "the elf"} moving at night. The elf should appear real but small, clearly the 10-12 inch plush doll size relative to household objects.`;
 };
 
-export const generateElfVideoPrompt = (sceneDescription: string): string => {
-  return `Security camera night vision footage of a small (10-12 inch tall) Christmas elf doll coming to life and moving in ${sceneDescription}.
+export const generateElfVideoPrompt = (sceneDescription: string, elfName?: string): string => {
+  return `Security camera night vision footage of a small (10-12 inch tall) Christmas elf doll named ${elfName || "the elf"} coming to life and moving in ${sceneDescription}.
 
 The elf is a soft plush felt doll with a red pointed hat, red suit, white collar, and beige felt face with simple embroidered features.
 
@@ -45,7 +48,7 @@ The footage should look like authentic home security camera:
 - Night vision green tint or low-light grainy quality
 - Timestamp visible in corner (late night hours)
 - REC indicator
-- The elf moves slowly, carefully, looking around as if checking if anyone is watching
+- ${elfName || "The elf"} moves slowly, carefully, looking around as if checking if anyone is watching
 - Subtle, realistic movements - turning head, taking small steps, reaching for something
 
 Camera is static (mounted on wall), only the elf moves. The elf is proportionally small compared to furniture and objects - clearly 10-12 inches tall.`;

@@ -3,6 +3,11 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ElfSighting, GenerationState } from "../types/elf";
 
+interface ElfSettings {
+  name: string;
+  photoUri: string | null;
+}
+
 interface ElfStore {
   sightings: ElfSighting[];
   currentSceneUri: string | null;
@@ -12,6 +17,9 @@ interface ElfStore {
   photoGenerations: number;
   videoGenerations: number;
   isPremium: boolean;
+
+  // Elf customization
+  elfSettings: ElfSettings;
 
   // Actions
   addSighting: (sighting: ElfSighting) => void;
@@ -24,6 +32,7 @@ interface ElfStore {
   incrementPhotoGenerations: () => void;
   incrementVideoGenerations: () => void;
   setPremium: (isPremium: boolean) => void;
+  setElfSettings: (settings: Partial<ElfSettings>) => void;
 }
 
 const initialGenerationState: GenerationState = {
@@ -31,6 +40,11 @@ const initialGenerationState: GenerationState = {
   progress: 0,
   stage: "idle",
   message: "",
+};
+
+const initialElfSettings: ElfSettings = {
+  name: "Jingle",
+  photoUri: null,
 };
 
 export const useElfStore = create<ElfStore>()(
@@ -42,6 +56,7 @@ export const useElfStore = create<ElfStore>()(
       photoGenerations: 0,
       videoGenerations: 0,
       isPremium: false,
+      elfSettings: initialElfSettings,
 
       addSighting: (sighting) =>
         set((state) => ({
@@ -79,6 +94,11 @@ export const useElfStore = create<ElfStore>()(
         set((state) => ({ videoGenerations: state.videoGenerations + 1 })),
 
       setPremium: (isPremium) => set({ isPremium }),
+
+      setElfSettings: (settings) =>
+        set((state) => ({
+          elfSettings: { ...state.elfSettings, ...settings },
+        })),
     }),
     {
       name: "elf-sightings-storage",
@@ -88,6 +108,7 @@ export const useElfStore = create<ElfStore>()(
         photoGenerations: state.photoGenerations,
         videoGenerations: state.videoGenerations,
         isPremium: state.isPremium,
+        elfSettings: state.elfSettings,
       }),
     }
   )
