@@ -1,12 +1,26 @@
-import React from "react";
-import { View, Text, Pressable, ScrollView } from "react-native";
+import React, { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  Pressable,
+  ScrollView,
+  ActivityIndicator,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
+import { PurchasesPackage } from "react-native-purchases";
 import { RootStackParamList } from "../navigation/RootNavigator";
 import { useElfStore } from "../state/elfStore";
+import {
+  getOfferings,
+  purchasePackage,
+  restorePurchases,
+  hasEntitlement,
+  isRevenueCatEnabled,
+} from "../lib/revenuecatClient";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -18,15 +32,89 @@ export default function PaywallScreen() {
   const navigation = useNavigation<NavigationProp>();
   const setPremium = useElfStore((s) => s.setPremium);
 
-  const handleRestore = () => {
-    // RevenueCat restore logic would go here
-    // For now, show that RevenueCat needs to be connected
+  const [isLoading, setIsLoading] = useState(true);
+  const [isPurchasing, setIsPurchasing] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
+  const [lifetimePackage, setLifetimePackage] = useState<PurchasesPackage | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadOfferings();
+  }, []);
+
+  const loadOfferings = async () => {
+    setIsLoading(true);
+    setError(null);
+
+    const result = await getOfferings();
+
+    if (result.ok && result.data.current) {
+      const pkg = result.data.current.availablePackages.find(
+        (p) => p.identifier === "$rc_lifetime"
+      );
+      setLifetimePackage(pkg || null);
+    } else if (!result.ok) {
+      if (result.reason === "not_configured") {
+        setError("Payments not configured yet");
+      } else if (result.reason === "web_not_supported") {
+        setError("Please use the mobile app to purchase");
+      }
+    }
+
+    setIsLoading(false);
   };
 
-  const handleSubscribe = () => {
-    // RevenueCat purchase logic would go here
-    // For now, this is a placeholder
+  const checkAndUpdatePremiumStatus = async () => {
+    const premiumResult = await hasEntitlement("premium");
+    if (premiumResult.ok && premiumResult.data) {
+      setPremium(true);
+      navigation.goBack();
+      return true;
+    }
+    return false;
   };
+
+  const handleRestore = async () => {
+    setIsRestoring(true);
+    setError(null);
+
+    const result = await restorePurchases();
+
+    if (result.ok) {
+      const hasPremium = await checkAndUpdatePremiumStatus();
+      if (!hasPremium) {
+        setError("No purchases found to restore");
+      }
+    } else {
+      setError("Failed to restore purchases");
+    }
+
+    setIsRestoring(false);
+  };
+
+  const handleSubscribe = async () => {
+    if (!lifetimePackage) return;
+
+    setIsPurchasing(true);
+    setError(null);
+
+    const result = await purchasePackage(lifetimePackage);
+
+    if (result.ok) {
+      await checkAndUpdatePremiumStatus();
+    } else {
+      if (result.reason === "sdk_error") {
+        // User likely cancelled - don't show error
+      } else {
+        setError("Purchase failed. Please try again.");
+      }
+    }
+
+    setIsPurchasing(false);
+  };
+
+  const price = lifetimePackage?.product?.priceString || "$4.99";
+  const isConfigured = isRevenueCatEnabled();
 
   return (
     <View className="flex-1 bg-[#0a0f1a]">
@@ -96,44 +184,61 @@ export default function PaywallScreen() {
             <Text className="text-gray-500 text-sm mb-2">
               Limited Time Holiday Offer
             </Text>
-            <View className="flex-row items-baseline">
-              <Text className="text-white text-4xl font-bold">$4.99</Text>
-              <Text className="text-gray-400 text-base ml-2">/ lifetime</Text>
-            </View>
-            <Text className="text-green-500 text-sm mt-2">
-              One-time purchase, no subscription
-            </Text>
+            {isLoading ? (
+              <ActivityIndicator color="#22c55e" size="small" />
+            ) : (
+              <>
+                <View className="flex-row items-baseline">
+                  <Text className="text-white text-4xl font-bold">{price}</Text>
+                  <Text className="text-gray-400 text-base ml-2">/ lifetime</Text>
+                </View>
+                <Text className="text-green-500 text-sm mt-2">
+                  One-time purchase, no subscription
+                </Text>
+              </>
+            )}
           </View>
+
+          {/* Error Message */}
+          {error && (
+            <View className="bg-red-500/10 rounded-xl p-4 mb-4">
+              <Text className="text-red-400 text-sm text-center">{error}</Text>
+            </View>
+          )}
 
           {/* Subscribe Button */}
           <Pressable
             onPress={handleSubscribe}
-            className="bg-green-600 rounded-2xl py-4 mb-4 active:opacity-80"
+            disabled={isPurchasing || isLoading || !lifetimePackage}
+            className={`rounded-2xl py-4 mb-4 ${
+              isPurchasing || isLoading || !lifetimePackage
+                ? "bg-green-600/50"
+                : "bg-green-600 active:opacity-80"
+            }`}
           >
-            <Text className="text-white text-lg font-bold text-center">
-              Unlock Premium
-            </Text>
+            {isPurchasing ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text className="text-white text-lg font-bold text-center">
+                Unlock Premium
+              </Text>
+            )}
           </Pressable>
 
           {/* Restore Button */}
           <Pressable
             onPress={handleRestore}
+            disabled={isRestoring || !isConfigured}
             className="py-3 mb-6"
           >
-            <Text className="text-gray-400 text-base text-center">
-              Restore Purchase
-            </Text>
-          </Pressable>
-
-          {/* Info Notice */}
-          <View className="bg-amber-500/10 rounded-xl p-4 mb-4">
-            <View className="flex-row items-start">
-              <Ionicons name="information-circle" size={20} color="#f59e0b" />
-              <Text className="text-amber-500 text-sm ml-2 flex-1">
-                To enable purchases, please set up RevenueCat in the Payments tab of the Vibecode app.
+            {isRestoring ? (
+              <ActivityIndicator color="#9ca3af" size="small" />
+            ) : (
+              <Text className="text-gray-400 text-base text-center">
+                Restore Purchase
               </Text>
-            </View>
-          </View>
+            )}
+          </Pressable>
 
           {/* Terms */}
           <Text className="text-gray-600 text-xs text-center leading-5">
