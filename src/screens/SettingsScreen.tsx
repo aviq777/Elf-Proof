@@ -15,7 +15,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { RootStackParamList } from "../navigation/RootNavigator";
-import { useElfStore } from "../state/elfStore";
+import { useElfStore, USAGE_LIMITS } from "../state/elfStore";
 import {
   isRevenueCatEnabled,
   hasEntitlement,
@@ -205,41 +205,132 @@ export default function SettingsScreen() {
 
           {/* Premium Status */}
           <View className="bg-[#111827] rounded-2xl p-5 mb-4">
-            <View className="flex-row items-center mb-4">
-              <Ionicons name="star" size={20} color="#f59e0b" />
-              <Text className="text-white font-semibold text-base ml-2">
-                Premium Status
-              </Text>
-            </View>
-
             {isPremium ? (
-              <View className="bg-green-600/20 rounded-xl p-4 flex-row items-center">
-                <Ionicons name="checkmark-circle" size={24} color="#22c55e" />
-                <View className="ml-3">
-                  <Text className="text-green-500 font-semibold">Premium Active</Text>
-                  <Text className="text-gray-400 text-sm">Unlimited sightings</Text>
-                </View>
-              </View>
-            ) : (
               <>
-                <View className="bg-gray-800 rounded-xl p-4 mb-3">
+                <View className="flex-row items-center justify-between mb-4">
+                  <View className="flex-row items-center">
+                    <Ionicons name="star" size={20} color="#22c55e" />
+                    <Text className="text-white font-semibold text-base ml-2">
+                      Your Plan
+                    </Text>
+                  </View>
+                  <View className="bg-green-600 px-3 py-1 rounded-full">
+                    <Text className="text-white font-bold text-xs">PREMIUM</Text>
+                  </View>
+                </View>
+
+                <View className="bg-green-600/10 rounded-xl p-4 border border-green-600/30">
+                  <View className="flex-row items-center mb-3">
+                    <Ionicons name="checkmark-circle" size={24} color="#22c55e" />
+                    <Text className="text-green-500 font-semibold text-lg ml-2">Premium Member</Text>
+                  </View>
+
                   <View className="flex-row justify-between mb-2">
-                    <Text className="text-gray-400">Photos used</Text>
-                    <Text className="text-white font-semibold">{photoGenerations} / 2</Text>
+                    <Text className="text-gray-400">Photos remaining</Text>
+                    <Text className="text-white font-semibold">
+                      {Math.max(0, USAGE_LIMITS.premium.photos - photoGenerations)} / {USAGE_LIMITS.premium.photos}
+                    </Text>
                   </View>
                   <View className="flex-row justify-between">
-                    <Text className="text-gray-400">Videos used</Text>
-                    <Text className="text-white font-semibold">{videoGenerations} / 1</Text>
+                    <Text className="text-gray-400">Videos remaining</Text>
+                    <Text className="text-white font-semibold">
+                      {Math.max(0, USAGE_LIMITS.premium.videos - videoGenerations)} / {USAGE_LIMITS.premium.videos}
+                    </Text>
+                  </View>
+                </View>
+              </>
+            ) : (
+              <>
+                <View className="flex-row items-center justify-between mb-4">
+                  <View className="flex-row items-center">
+                    <Ionicons name="star-outline" size={20} color="#6b7280" />
+                    <Text className="text-white font-semibold text-base ml-2">
+                      Your Plan
+                    </Text>
+                  </View>
+                  <View className="bg-gray-600 px-3 py-1 rounded-full">
+                    <Text className="text-white font-bold text-xs">FREE</Text>
                   </View>
                 </View>
 
+                {/* Usage Progress */}
+                <View className="bg-gray-800 rounded-xl p-4 mb-4">
+                  <Text className="text-white font-semibold mb-3">Your Free Usage</Text>
+
+                  {/* Photos Progress */}
+                  <View className="mb-3">
+                    <View className="flex-row justify-between mb-1">
+                      <Text className="text-gray-400 text-sm">Photos</Text>
+                      <Text className="text-white font-semibold text-sm">
+                        {photoGenerations} / {USAGE_LIMITS.free.photos} used
+                      </Text>
+                    </View>
+                    <View className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                      <View
+                        className="h-full rounded-full"
+                        style={{
+                          width: `${Math.min(100, (photoGenerations / USAGE_LIMITS.free.photos) * 100)}%`,
+                          backgroundColor: photoGenerations >= USAGE_LIMITS.free.photos ? "#ef4444" : "#22c55e"
+                        }}
+                      />
+                    </View>
+                  </View>
+
+                  {/* Videos Progress */}
+                  <View>
+                    <View className="flex-row justify-between mb-1">
+                      <Text className="text-gray-400 text-sm">Videos</Text>
+                      <Text className="text-white font-semibold text-sm">
+                        {videoGenerations} / {USAGE_LIMITS.free.videos} used
+                      </Text>
+                    </View>
+                    <View className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                      <View
+                        className="h-full rounded-full"
+                        style={{
+                          width: `${Math.min(100, (videoGenerations / USAGE_LIMITS.free.videos) * 100)}%`,
+                          backgroundColor: videoGenerations >= USAGE_LIMITS.free.videos ? "#ef4444" : "#22c55e"
+                        }}
+                      />
+                    </View>
+                  </View>
+                </View>
+
+                {/* Warning if at or near limit */}
+                {(photoGenerations >= USAGE_LIMITS.free.photos || videoGenerations >= USAGE_LIMITS.free.videos) ? (
+                  <View className="bg-red-500/10 rounded-xl p-4 mb-4 border border-red-500/30">
+                    <View className="flex-row items-center mb-2">
+                      <Ionicons name="warning" size={20} color="#ef4444" />
+                      <Text className="text-red-400 font-semibold ml-2">Limit Reached</Text>
+                    </View>
+                    <Text className="text-red-300 text-sm">
+                      {"You've used all your free generations. Upgrade to Premium to continue creating elf sightings!"}
+                    </Text>
+                  </View>
+                ) : (
+                  <View className="bg-amber-500/10 rounded-xl p-4 mb-4 border border-amber-500/30">
+                    <View className="flex-row items-center mb-2">
+                      <Ionicons name="gift" size={20} color="#f59e0b" />
+                      <Text className="text-amber-400 font-semibold ml-2">Free Trial</Text>
+                    </View>
+                    <Text className="text-amber-200 text-sm">
+                      You get {USAGE_LIMITS.free.photos} free photos and {USAGE_LIMITS.free.videos} free video. After that, upgrade to Premium for {USAGE_LIMITS.premium.photos} photos and {USAGE_LIMITS.premium.videos} videos!
+                    </Text>
+                  </View>
+                )}
+
+                {/* Upgrade Button */}
                 <Pressable
                   onPress={handleUpgradeToPremium}
-                  className="bg-green-600 rounded-xl py-3 flex-row items-center justify-center active:opacity-80"
+                  className="bg-green-600 rounded-xl py-4 flex-row items-center justify-center active:opacity-80"
                 >
-                  <Ionicons name="sparkles" size={18} color="white" />
-                  <Text className="text-white font-semibold ml-2">Upgrade to Premium</Text>
+                  <Ionicons name="sparkles" size={20} color="white" />
+                  <Text className="text-white font-bold text-base ml-2">Upgrade to Premium</Text>
                 </Pressable>
+
+                <Text className="text-gray-500 text-xs text-center mt-3">
+                  One-time purchase of $4.99 - No subscription
+                </Text>
               </>
             )}
           </View>
