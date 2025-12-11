@@ -50,7 +50,7 @@ export default function PaywallScreen() {
 
     if (result.ok && result.data.current) {
       const pkg = result.data.current.availablePackages.find(
-        (p) => p.identifier === "$rc_lifetime"
+        (p: PurchasesPackage) => p.identifier === "$rc_lifetime"
       );
       setLifetimePackage(pkg || null);
     } else if (!result.ok) {

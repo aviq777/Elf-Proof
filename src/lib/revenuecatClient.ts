@@ -14,17 +14,22 @@
  * - Web: Disabled (RevenueCat only supports native app stores)
  *
  * The module automatically selects the correct key based on __DEV__ mode.
- * 
+ *
  * This module is used to get the current customer info, offerings, and purchase packages.
  * These exported functions are found at the bottom of the file.
  */
 
 import { Platform } from "react-native";
-import Purchases, {
-  type PurchasesOfferings,
-  type CustomerInfo,
-  type PurchasesPackage,
+import type {
+  PurchasesOfferings,
+  CustomerInfo,
+  PurchasesPackage,
 } from "react-native-purchases";
+
+// Re-export types for consumers
+export type { PurchasesOfferings, CustomerInfo, PurchasesPackage };
+
+const LOG_PREFIX = "[RevenueCat]";
 
 // Check if running on web
 const isWeb = Platform.OS === "web";
@@ -36,10 +41,55 @@ const prodKey = process.env.EXPO_PUBLIC_VIBECODE_REVENUECAT_APPLE_KEY;
 // Use __DEV__ to determine which key to use (standard React Native pattern)
 const apiKey = isWeb ? undefined : __DEV__ ? testKey : prodKey;
 
-// Track if RevenueCat is enabled
+// Track if RevenueCat is enabled - only on native platforms with valid keys
 const isEnabled = !!apiKey && !isWeb;
 
-const LOG_PREFIX = "[RevenueCat]";
+// Lazy-loaded Purchases module (only loaded on native platforms when needed)
+let Purchases: typeof import("react-native-purchases").default | null = null;
+let purchasesInitialized = false;
+let initializationPromise: Promise<boolean> | null = null;
+
+// Initialize Purchases SDK lazily
+const initializePurchases = async (): Promise<boolean> => {
+  if (isWeb || !apiKey) {
+    return false;
+  }
+
+  if (purchasesInitialized && Purchases) {
+    return true;
+  }
+
+  // Return existing promise if initialization is in progress
+  if (initializationPromise) {
+    return initializationPromise;
+  }
+
+  initializationPromise = (async () => {
+    try {
+      // Dynamic import to avoid loading native module on web
+      const purchasesModule = await import("react-native-purchases");
+      Purchases = purchasesModule.default;
+
+      // Set up custom log handler to suppress Test Store and expected errors
+      Purchases.setLogHandler((logLevel, message) => {
+        if (logLevel === Purchases!.LOG_LEVEL.ERROR) {
+          console.log(LOG_PREFIX, message);
+        }
+      });
+
+      Purchases.configure({ apiKey: apiKey! });
+      purchasesInitialized = true;
+      console.log(`${LOG_PREFIX} SDK initialized successfully`);
+      return true;
+    } catch (error) {
+      console.error(`${LOG_PREFIX} Failed to initialize:`, error);
+      initializationPromise = null;
+      return false;
+    }
+  })();
+
+  return initializationPromise;
+};
 
 export type RevenueCatGuardReason =
   | "web_not_supported"
@@ -53,7 +103,7 @@ export type RevenueCatResult<T> =
 // Internal guard to get consistent success/failure results from RevenueCat.
 const guardRevenueCatUsage = async <T>(
   action: string,
-  operation: () => Promise<T>,
+  operation: (purchases: typeof import("react-native-purchases").default) => Promise<T>,
 ): Promise<RevenueCatResult<T>> => {
   if (isWeb) {
     console.log(
@@ -67,34 +117,21 @@ const guardRevenueCatUsage = async <T>(
     return { ok: false, reason: "not_configured" };
   }
 
+  // Ensure SDK is initialized
+  const initialized = await initializePurchases();
+  if (!initialized || !Purchases) {
+    console.log(`${LOG_PREFIX} ${action} skipped: SDK failed to initialize`);
+    return { ok: false, reason: "sdk_error" };
+  }
+
   try {
-    const data = await operation();
+    const data = await operation(Purchases);
     return { ok: true, data };
   } catch (error) {
     console.log(`${LOG_PREFIX} ${action} failed:`, error);
     return { ok: false, reason: "sdk_error", error };
   }
 };
-
-// Initialize RevenueCat if key exists
-if (isEnabled) {
-  try {
-    // Set up custom log handler to suppress Test Store and expected errors
-    // These are non-errors thrown as errors by the SDK, and will be confusing to the user.
-    Purchases.setLogHandler((logLevel, message) => {
-
-      // Log ERROR messages normally
-      if (logLevel === Purchases.LOG_LEVEL.ERROR) {
-        console.log(LOG_PREFIX, message);
-      }
-    });
-
-    Purchases.configure({ apiKey: apiKey! });
-    console.log(`${LOG_PREFIX} SDK initialized successfully`);
-  } catch (error) {
-    console.error(`${LOG_PREFIX} Failed to initialize:`, error);
-  }
-}
 
 /**
  * Check if RevenueCat is configured and enabled
@@ -126,7 +163,7 @@ export const isRevenueCatEnabled = (): boolean => {
 export const getOfferings = (): Promise<
   RevenueCatResult<PurchasesOfferings>
 > => {
-  return guardRevenueCatUsage("getOfferings", () => Purchases.getOfferings());
+  return guardRevenueCatUsage("getOfferings", (purchases) => purchases.getOfferings());
 };
 
 /**
@@ -144,8 +181,8 @@ export const getOfferings = (): Promise<
 export const purchasePackage = (
   packageToPurchase: PurchasesPackage,
 ): Promise<RevenueCatResult<CustomerInfo>> => {
-  return guardRevenueCatUsage("purchasePackage", async () => {
-    const { customerInfo } = await Purchases.purchasePackage(packageToPurchase);
+  return guardRevenueCatUsage("purchasePackage", async (purchases) => {
+    const { customerInfo } = await purchases.purchasePackage(packageToPurchase);
     return customerInfo;
   });
 };
@@ -165,8 +202,8 @@ export const purchasePackage = (
  * }
  */
 export const getCustomerInfo = (): Promise<RevenueCatResult<CustomerInfo>> => {
-  return guardRevenueCatUsage("getCustomerInfo", () =>
-    Purchases.getCustomerInfo(),
+  return guardRevenueCatUsage("getCustomerInfo", (purchases) =>
+    purchases.getCustomerInfo(),
   );
 };
 
@@ -184,8 +221,8 @@ export const getCustomerInfo = (): Promise<RevenueCatResult<CustomerInfo>> => {
 export const restorePurchases = (): Promise<
   RevenueCatResult<CustomerInfo>
 > => {
-  return guardRevenueCatUsage("restorePurchases", () =>
-    Purchases.restorePurchases(),
+  return guardRevenueCatUsage("restorePurchases", (purchases) =>
+    purchases.restorePurchases(),
   );
 };
 
@@ -202,8 +239,8 @@ export const restorePurchases = (): Promise<
  * }
  */
 export const setUserId = (userId: string): Promise<RevenueCatResult<void>> => {
-  return guardRevenueCatUsage("setUserId", async () => {
-    await Purchases.logIn(userId);
+  return guardRevenueCatUsage("setUserId", async (purchases) => {
+    await purchases.logIn(userId);
   });
 };
 
@@ -219,8 +256,8 @@ export const setUserId = (userId: string): Promise<RevenueCatResult<void>> => {
  * }
  */
 export const logoutUser = (): Promise<RevenueCatResult<void>> => {
-  return guardRevenueCatUsage("logoutUser", async () => {
-    await Purchases.logOut();
+  return guardRevenueCatUsage("logoutUser", async (purchases) => {
+    await purchases.logOut();
   });
 };
 
@@ -311,7 +348,7 @@ export const getPackage = async (
 
   const pkg =
     offeringsResult.data.current?.availablePackages.find(
-      (availablePackage) => availablePackage.identifier === packageIdentifier,
+      (availablePackage: PurchasesPackage) => availablePackage.identifier === packageIdentifier,
     ) ?? null;
 
   return { ok: true, data: pkg };
