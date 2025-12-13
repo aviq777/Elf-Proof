@@ -111,12 +111,12 @@ export default function ViewSightingScreen() {
 
         <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
           {/* Media Display */}
-          <View className="aspect-video bg-black">
+          <View className="w-full bg-black" style={{ aspectRatio: 16 / 9 }}>
             {sighting.type === "video" && sighting.videoUri ? (
               <Video
                 source={{ uri: sighting.videoUri }}
-                style={{ flex: 1 }}
-                resizeMode={ResizeMode.CONTAIN}
+                style={{ width: "100%", height: "100%" }}
+                resizeMode={ResizeMode.COVER}
                 useNativeControls
                 isLooping
               />
