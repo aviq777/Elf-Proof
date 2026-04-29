@@ -13,7 +13,7 @@ import Animated, {
   Easing,
   FadeIn,
 } from "react-native-reanimated";
-import * as FileSystem from "expo-file-system";
+import * as FileSystem from 'expo-file-system/legacy';
 import * as ImageManipulator from "expo-image-manipulator";
 import { RootStackParamList } from "../navigation/RootNavigator";
 import { useElfStore } from "../state/elfStore";

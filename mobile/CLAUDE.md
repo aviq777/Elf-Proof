@@ -10,7 +10,7 @@ The user may be non-technical, overly vague, or request ambitious implementation
 
 ## General
 
-We are using Expo SDK 53 with React Native 0.76.7.
+We are using Expo SDK 54 with React Native 0.81.5.
 All the libraries and packages you need are already installed in package.json. DO NOT install new packages.
 Use Pressable over touchable opacity
 We are using bun instead of npm.
